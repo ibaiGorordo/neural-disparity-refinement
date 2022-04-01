@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import numpy as np
+import math
 from lib.backbone import get_backbone
 from lib.model.classifier import Classifier
 from lib.model.regressor import Regressor
@@ -127,7 +129,7 @@ class Refiner(nn.Module):
         self,
         img: torch.Tensor,
         disp: torch.Tensor,
-        points: torch.Tensor,
+        points: torch.Tensor = None,
         labels: torch.Tensor = None,
     ):
         # build the input (1,3 or 4 channels)
@@ -138,6 +140,30 @@ class Refiner(nn.Module):
         if self.opt.num_in_ch == 3:
             x = img
 
+        if points is None:
+            height=img[0].shape[1]
+            width=img[0].shape[2]
+
+            start_x=0
+            start_y=0
+            end_x=width
+            end_y=height
+
+            nx = np.linspace(start_x, end_x, width)
+            ny = np.linspace(start_y, end_y, height)
+            u, v = np.meshgrid(nx, ny)
+
+            num_samples = height*width
+            num_out=2
+
+            coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
+            batch_size, n_pts, _ = coords.shape
+            coords = torch.Tensor(coords).float().to(device="cuda")
+            output = torch.zeros(num_out, math.ceil(width * height / num_samples), num_samples)
+
+            coords = coords.reshape(1, -1, 2)
+            points = torch.transpose(coords, 1, 2)
+
         self.input_disp = disp
 
         # Get features from inputs
@@ -146,6 +172,6 @@ class Refiner(nn.Module):
         # Point query
         self.query(points, labels)
 
-        # Get the error
-        error = self.get_error()
-        return error
+        confidence,_ = torch.max(self.probs, dim=1, keepdim=True)
+
+        return self.disparity.view(1, img[0].shape[1], img[0].shape[2] ), confidence.view(1, img[0].shape[1], img[0].shape[2])
