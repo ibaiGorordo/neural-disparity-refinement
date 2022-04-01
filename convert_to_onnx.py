@@ -75,3 +75,9 @@ torch.onnx.export(net,               # model being run
               output_names = ['refined_disp', 'conf'], # the model's output names
               )
 
+pred, confidence = net(img_tensor, disp_tensor)
+pred = pred.squeeze().detach().cpu().numpy()
+confidence = confidence.squeeze().detach().cpu().numpy()
+
+plt.imsave("output_pytorch.png", pred, cmap="magma")
+
