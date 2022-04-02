@@ -153,7 +153,7 @@ class Refiner(nn.Module):
             ny = np.linspace(start_y, end_y, height)
             u, v = np.meshgrid(nx, ny)
 
-            num_samples = height*width
+            num_samples = 50000
             num_out=2
 
             coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
@@ -169,9 +169,18 @@ class Refiner(nn.Module):
         # Get features from inputs
         self.filter(x)
 
-        # Point query
-        self.query(points, labels)
+        with torch.no_grad():
+            for i, p_split in enumerate(
+                torch.split(
+                    coords.reshape(batch_size, -1, 2), int(num_samples / batch_size), dim=1
+                )
+            ):  
+                print(i)
+                points = torch.transpose(p_split, 1, 2)
+                self.query(points.to(device="cuda"))
+                preds = self.get_disparity()
+                confidence = self.get_confidence()
+                output[0, i, : p_split.shape[1]] = preds.to(device="cuda")
+                output[1, i, : p_split.shape[1]] = confidence.to(device="cuda")
 
-        confidence,_ = torch.max(self.probs, dim=1, keepdim=True)
-
-        return self.disparity.view(1, img[0].shape[1], img[0].shape[2] ), confidence.view(1, img[0].shape[1], img[0].shape[2])
+        return output[0].view(1, -1)[:, :n_pts].reshape(-1, height, width), output[1].view(1, -1)[:, :n_pts].reshape(-1, height, width)

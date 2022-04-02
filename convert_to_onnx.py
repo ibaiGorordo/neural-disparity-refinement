@@ -21,7 +21,7 @@ opt.downsampling_factor = 1
 opt.disp_scale = 1
 opt.scale_factor16bit = 256
 
-input_shape = (320, 256) # Make multiple of 32 to avoid having to use pads. It allows the points calculation inside the model
+input_shape = (640, 480) # Make multiple of 32 to avoid having to use pads. It allows the points calculation inside the model
 
 model_path = "checkpoints/sceneflow/net_latest"
 img_path = "sample/rgb_middlebury.png"
