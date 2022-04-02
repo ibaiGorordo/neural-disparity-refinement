@@ -7,6 +7,8 @@ from lib.model.classifier import Classifier
 from lib.model.regressor import Regressor
 from lib.utils import interpolate, scale_coords
 
+
+
 class Refiner(nn.Module):
     def __init__(self, opt):
         super(Refiner, self).__init__()
@@ -16,6 +18,7 @@ class Refiner(nn.Module):
         self.name = "Refiner"
         self.backbone = get_backbone(opt.backbone)(opt)
         self.max_disp = opt.max_disp
+        self.convert_without_scatternd = opt.convert_without_scatternd 
 
         self.mlp_classification = Classifier(
             filter_channels=[self.backbone.out_ch, 512, 256, 128, self.max_disp]
@@ -153,7 +156,12 @@ class Refiner(nn.Module):
             ny = np.linspace(start_y, end_y, height)
             u, v = np.meshgrid(nx, ny)
 
-            num_samples = 50000
+            if self.convert_without_scatternd:
+                num_samples = width*height
+            else:
+                num_samples = 50000
+            print(num_samples)
+
             num_out=2
 
             coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
@@ -169,13 +177,21 @@ class Refiner(nn.Module):
         # Get features from inputs
         self.filter(img, disp)
 
-        with torch.no_grad():
+        if self.convert_without_scatternd:
+
+            self.query(points, labels)
+
+            confidence,_ = torch.max(self.probs, dim=1, keepdim=True)
+
+            return self.disparity.view(1, img[0].shape[1], img[0].shape[2] ), confidence.view(1, img[0].shape[1], img[0].shape[2])
+
+        else:
+
             for i, p_split in enumerate(
                 torch.split(
                     coords.reshape(batch_size, -1, 2), int(num_samples / batch_size), dim=1
                 )
             ):  
-                print(i)
                 points = torch.transpose(p_split, 1, 2)
                 self.query(points.to(device="cuda"))
                 preds = self.get_disparity()
@@ -183,4 +199,4 @@ class Refiner(nn.Module):
                 output[0, i, : p_split.shape[1]] = preds.to(device="cuda")
                 output[1, i, : p_split.shape[1]] = confidence.to(device="cuda")
 
-        return output[0].view(1, -1)[:, :n_pts].reshape(-1, height, width), output[1].view(1, -1)[:, :n_pts].reshape(-1, height, width)
+            return output[0].view(1, -1)[:, :n_pts].reshape(-1, height, width), output[1].view(1, -1)[:, :n_pts].reshape(-1, height, width)

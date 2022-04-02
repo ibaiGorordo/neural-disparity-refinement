@@ -21,6 +21,11 @@ opt.downsampling_factor = 1
 opt.disp_scale = 1
 opt.scale_factor16bit = 256
 
+# When converting the model to ONNX, if True, it removes the loop in the forward function
+# which removes the scatterND nodes of the model. However, this takes more GPU memory which limits 
+# the input resolution
+opt.convert_without_scatternd = False 
+
 input_shape = (640, 480) # Make multiple of 32 to avoid having to use pads. It allows the points calculation inside the model
 
 model_path = "checkpoints/sceneflow/net_latest"
