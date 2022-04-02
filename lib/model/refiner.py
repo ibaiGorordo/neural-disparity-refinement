@@ -24,7 +24,7 @@ class Refiner(nn.Module):
             filter_channels=[self.backbone.out_ch + 1, 128, 64, 1],
         )
 
-    def filter(self, batch: torch.Tensor):
+    def filter(self, img: torch.Tensor, depth: torch.Tensor):
         """
         Params:
 
@@ -32,8 +32,8 @@ class Refiner(nn.Module):
         phase: current phase (train, test)
         """
 
-        self.feat_list = self.backbone(batch)
-        _, _, height, width = batch.shape
+        self.feat_list = self.backbone(img, depth)
+        _, _, height, width = img.shape
         self.height = height
         self.width = width
 
@@ -167,7 +167,7 @@ class Refiner(nn.Module):
         self.input_disp = disp
 
         # Get features from inputs
-        self.filter(x)
+        self.filter(img, disp)
 
         with torch.no_grad():
             for i, p_split in enumerate(

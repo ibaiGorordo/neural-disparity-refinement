@@ -106,7 +106,7 @@ class Vgg13(nn.Module):
 
         self.out_ch = 32 + 64
 
-    def forward(self, batch: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, rgb: torch.Tensor, depth: torch.Tensor):
         """Extract features using two VGG backbone:
             one for Image, the other for Depth
         Params:
@@ -114,7 +114,7 @@ class Vgg13(nn.Module):
         Returns:
             a list of features extracted from images
         """
-        depth = batch[:, self.num_in_ch - 1 :, :, :]
+        # depth = batch[:, self.num_in_ch - 1 :, :, :]
         depth = depth / self.max_disp
         stem_block_d = self.stem_block_depth(depth)
         downsample_2_d = self.downsample_2_d(stem_block_d)
@@ -122,7 +122,7 @@ class Vgg13(nn.Module):
         downsample_8_d = self.downsample_8_d(downsample_4_d)
         downsample_16_d = self.downsample_16_d(downsample_8_d)
 
-        rgb = batch[:, : self.num_in_ch - 1, :, :]
+        # rgb = batch[:, : self.num_in_ch - 1, :, :]
         rgb = rgb / 255.0
         stem_block_rgb = self.stem_block_rgb(rgb)
         downsample_2_rgb = self.downsample_2_rgb(stem_block_rgb)
