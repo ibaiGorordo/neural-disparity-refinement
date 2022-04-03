@@ -177,10 +177,10 @@ class Refiner(nn.Module):
                 )
             ):  
                 points_split = torch.transpose(p_split, 1, 2)
-                self.query(points_split.to(device="cuda"))
+                self.query(points_split.to(device=self.opt.device))
                 preds = self.get_disparity()
                 confidence = self.get_confidence()
-                output[0, i, : p_split.shape[1]] = preds.to(device="cuda")
-                output[1, i, : p_split.shape[1]] = confidence.to(device="cuda")
+                output[0, i, : p_split.shape[1]] = preds.to(device=self.opt.device)
+                output[1, i, : p_split.shape[1]] = confidence.to(device=self.opt.device)
 
             return output[0].view(1, -1)[:, :n_pts].reshape(-1, height, width), output[1].view(1, -1)[:, :n_pts].reshape(-1, height, width)
