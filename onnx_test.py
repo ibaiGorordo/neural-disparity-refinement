@@ -17,6 +17,7 @@ class Refiner():
 	def initialize_model(self, model_path, max_dist=10):
 
 		self.max_dist = max_dist
+		self.points = np.load("points.npy")
 
 		# Initialize model session
 		self.session = onnxruntime.InferenceSession(model_path, providers=['CUDAExecutionProvider',
@@ -67,7 +68,8 @@ class Refiner():
 	def inference(self, rgb_tensor, disp_tensor):
 
 		outputs = self.session.run(self.output_names, {self.input_names[0]: rgb_tensor,
-													   self.input_names[1]: disp_tensor})
+													   self.input_names[1]: disp_tensor,
+													   self.input_names[2]: self.points})
 
 		return outputs
 

@@ -149,7 +149,7 @@ class Refiner(nn.Module):
         self.filter(img, disp)
 
         if self.convert_without_scatternd:
-
+            points = torch.transpose(coords, 1, 2)
             self.query(points, labels)
 
             confidence,_ = torch.max(self.probs, dim=1, keepdim=True)
@@ -165,10 +165,10 @@ class Refiner(nn.Module):
                 num_samples = width*height
             else:
                 num_samples = 50000
-            print(num_samples)
+            print(num_samples, points)
             num_out=2
 
-            batch_size, _, n_pts = points.shape
+            batch_size, n_pts,_ = points.shape
             output = torch.zeros(num_out, math.ceil(width * height / num_samples), num_samples)
 
             for i, p_split in enumerate(
