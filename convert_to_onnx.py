@@ -85,15 +85,15 @@ coords = torch.Tensor(coords).float().to(device=opt.device)
 coords = coords.reshape(1, -1, 2)
 points = torch.transpose(coords, 1, 2)
 
-# torch.onnx.export(net,               # model being run
-#               (img_tensor, disp_tensor, points),                         # model input (or a tuple for multiple inputs)
-#               "disp_refiner.onnx",   # where to save the model (can be a file or file-like object)
-#               export_params=True,        # store the trained parameter weights inside the model file
-#               opset_version=11,          # the ONNX version to export the model to
-#               do_constant_folding=True,
-#               input_names = ['rgb', 'disp'],   # the model's input names
-#               output_names = ['refined_disp', 'conf'], # the model's output names
-#               )
+torch.onnx.export(net,               # model being run
+              (img_tensor, disp_tensor, points),                         # model input (or a tuple for multiple inputs)
+              "disp_refiner.onnx",   # where to save the model (can be a file or file-like object)
+              export_params=True,        # store the trained parameter weights inside the model file
+              opset_version=11,          # the ONNX version to export the model to
+              do_constant_folding=True,
+              input_names = ['rgb', 'disp'],   # the model's input names
+              output_names = ['refined_disp', 'conf'], # the model's output names
+              )
 
 np.save("points.npy", points.detach().cpu().numpy())
 
