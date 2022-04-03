@@ -132,7 +132,7 @@ class Refiner(nn.Module):
         self,
         img: torch.Tensor,
         disp: torch.Tensor,
-        points: torch.Tensor = None,
+        points: torch.Tensor,
         labels: torch.Tensor = None,
     ):
         # build the input (1,3 or 4 channels)
@@ -142,35 +142,6 @@ class Refiner(nn.Module):
             x = torch.cat([img, x], dim=1)
         if self.opt.num_in_ch == 3:
             x = img
-
-        if points is None:
-            height=img[0].shape[1]
-            width=img[0].shape[2]
-
-            start_x=0
-            start_y=0
-            end_x=width
-            end_y=height
-
-            nx = np.linspace(start_x, end_x, width)
-            ny = np.linspace(start_y, end_y, height)
-            u, v = np.meshgrid(nx, ny)
-
-            if self.convert_without_scatternd:
-                num_samples = width*height
-            else:
-                num_samples = 50000
-            print(num_samples)
-
-            num_out=2
-
-            coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
-            batch_size, n_pts, _ = coords.shape
-            coords = torch.Tensor(coords).float().to(device="cuda")
-            output = torch.zeros(num_out, math.ceil(width * height / num_samples), num_samples)
-
-            coords = coords.reshape(1, -1, 2)
-            points = torch.transpose(coords, 1, 2)
 
         self.input_disp = disp
 
@@ -187,13 +158,26 @@ class Refiner(nn.Module):
 
         else:
 
+            height=img[0].shape[1]
+            width=img[0].shape[2]
+
+            if self.convert_without_scatternd:
+                num_samples = width*height
+            else:
+                num_samples = 50000
+            print(num_samples)
+            num_out=2
+
+            batch_size, _, n_pts = points.shape
+            output = torch.zeros(num_out, math.ceil(width * height / num_samples), num_samples)
+
             for i, p_split in enumerate(
                 torch.split(
-                    coords.reshape(batch_size, -1, 2), int(num_samples / batch_size), dim=1
+                    points.reshape(batch_size, -1, 2), int(num_samples / batch_size), dim=1
                 )
             ):  
-                points = torch.transpose(p_split, 1, 2)
-                self.query(points.to(device="cuda"))
+                points_split = torch.transpose(p_split, 1, 2)
+                self.query(points_split.to(device="cuda"))
                 preds = self.get_disparity()
                 confidence = self.get_confidence()
                 output[0, i, : p_split.shape[1]] = preds.to(device="cuda")

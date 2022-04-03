@@ -69,18 +69,35 @@ if img_tensor.ndim == 3:
 if disp_tensor.ndim == 3:
     disp_tensor = torch.unsqueeze(disp_tensor, 0)
 
+height=img_tensor[0].shape[1]
+width=img_tensor[0].shape[2]
 
-torch.onnx.export(net,               # model being run
-              (img_tensor, disp_tensor),                         # model input (or a tuple for multiple inputs)
-              "disp_refiner.onnx",   # where to save the model (can be a file or file-like object)
-              export_params=True,        # store the trained parameter weights inside the model file
-              opset_version=11,          # the ONNX version to export the model to
-              do_constant_folding=True,
-              input_names = ['rgb', 'disp'],   # the model's input names
-              output_names = ['refined_disp', 'conf'], # the model's output names
-              )
+start_x=0
+start_y=0
+end_x=width
+end_y=height
 
-pred, confidence = net(img_tensor, disp_tensor)
+nx = np.linspace(start_x, end_x, width)
+ny = np.linspace(start_y, end_y, height)
+u, v = np.meshgrid(nx, ny)
+coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
+coords = torch.Tensor(coords).float().to(device=opt.device)
+coords = coords.reshape(1, -1, 2)
+points = torch.transpose(coords, 1, 2)
+
+# torch.onnx.export(net,               # model being run
+#               (img_tensor, disp_tensor, points),                         # model input (or a tuple for multiple inputs)
+#               "disp_refiner.onnx",   # where to save the model (can be a file or file-like object)
+#               export_params=True,        # store the trained parameter weights inside the model file
+#               opset_version=11,          # the ONNX version to export the model to
+#               do_constant_folding=True,
+#               input_names = ['rgb', 'disp'],   # the model's input names
+#               output_names = ['refined_disp', 'conf'], # the model's output names
+#               )
+
+np.save("points.npy", points.detach().cpu().numpy())
+
+pred, confidence = net(img_tensor, disp_tensor, points)
 pred = pred.squeeze().detach().cpu().numpy()
 confidence = confidence.squeeze().detach().cpu().numpy()
 
