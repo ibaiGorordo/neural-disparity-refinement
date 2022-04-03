@@ -90,7 +90,7 @@ torch.onnx.export(net,               # model being run
               export_params=True,        # store the trained parameter weights inside the model file
               opset_version=11,          # the ONNX version to export the model to
               do_constant_folding=True,
-              input_names = ['rgb', 'disp'],   # the model's input names
+              input_names = ['rgb', 'disp', 'points'],   # the model's input names
               output_names = ['refined_disp', 'conf'], # the model's output names
               )
 
