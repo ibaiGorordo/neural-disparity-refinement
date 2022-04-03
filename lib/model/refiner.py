@@ -165,7 +165,7 @@ class Refiner(nn.Module):
                 num_samples = width*height
             else:
                 num_samples = 50000
-            print(num_samples, points)
+
             num_out=2
 
             batch_size, n_pts,_ = points.shape
