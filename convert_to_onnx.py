@@ -21,6 +21,11 @@ opt.downsampling_factor = 1
 opt.disp_scale = 1
 opt.scale_factor16bit = 256
 
+# set device
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = "cpu" # TODO: Comment for cuda, but it give memory issues when using bilinear_grid_sample() function
+opt.device = device
+
 # When converting the model to ONNX, if True, it removes the loop in the forward function
 # which removes the scatterND nodes of the model. However, this takes more GPU memory which limits 
 # the input resolution
@@ -50,11 +55,6 @@ o_shape = torch.from_numpy(np.asarray((height, width)))
 
 rgb = rgb.permute(2, 0, 1)
 disp = disp.permute(2, 0, 1)
-
-# set cuda
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
-opt.device = device
 
 # create net
 net = Refiner(opt).to(device=device)
