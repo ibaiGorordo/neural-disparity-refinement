@@ -53,7 +53,7 @@ disp = disp.permute(2, 0, 1)
 
 # set cuda
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+# device = "cpu"
 opt.device = device
 
 # create net
@@ -83,10 +83,9 @@ u, v = np.meshgrid(nx, ny)
 coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
 coords = torch.Tensor(coords).float().to(device=opt.device)
 coords = coords.reshape(1, -1, 2)
-points = torch.transpose(coords, 1, 2)
 
 torch.onnx.export(net,               # model being run
-              (img_tensor, disp_tensor, points),                         # model input (or a tuple for multiple inputs)
+              (img_tensor, disp_tensor, coords),                         # model input (or a tuple for multiple inputs)
               "disp_refiner.onnx",   # where to save the model (can be a file or file-like object)
               export_params=True,        # store the trained parameter weights inside the model file
               opset_version=11,          # the ONNX version to export the model to
@@ -95,9 +94,9 @@ torch.onnx.export(net,               # model being run
               output_names = ['refined_disp', 'conf'], # the model's output names
               )
 
-np.save("points.npy", points.detach().cpu().numpy())
+np.save("points.npy", coords.detach().cpu().numpy())
 
-pred, confidence = net(img_tensor, disp_tensor, points)
+pred, confidence = net(img_tensor, disp_tensor, coords)
 pred = pred.squeeze().detach().cpu().numpy()
 confidence = confidence.squeeze().detach().cpu().numpy()
 
